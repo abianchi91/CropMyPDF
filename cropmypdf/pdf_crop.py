@@ -9,6 +9,7 @@ import fitz  # PyMuPDF
 DPI = 50
 SCALE_FACTOR = 2
 
+
 class PDFCropTool:
     def __init__(self):
         self.pdf_path = None
@@ -133,3 +134,12 @@ class PDFCropTool:
         new_pdf.save(save_path)
         new_pdf.close()
         messagebox.showinfo("Success", f"PDF saved in:\n{save_path}")
+
+
+# run as script
+def main():
+    PDFCropTool()
+
+
+if __name__ == "__main__":
+    main()
