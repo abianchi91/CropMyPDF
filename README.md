@@ -27,5 +27,9 @@ pip install -r requirements.txt
 
 ## 🚀 USAGE
 ```bash
+# run as module
 python -m cropmypdf
+
+# or run directly
+python cropmypdf/pdf_crop.py
 ```

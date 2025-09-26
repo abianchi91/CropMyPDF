@@ -1,0 +1,17 @@
+[project]
+name = "cropmypdf"
+version = "0.1.0"
+description = "Uno strumento per ritagliare PDF tramite interfaccia grafica."
+authors = [
+    { name = "A Bianchi" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "Pillow",
+    "PyMuPDF"
+]
+
+[project.scripts]
+cropmypdf = "cropmypdf.pdf_crop:main"

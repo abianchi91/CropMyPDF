@@ -9,6 +9,7 @@ import fitz  # PyMuPDF
 DPI = 50
 SCALE_FACTOR = 2
 
+
 class PDFCropTool:
     def __init__(self):
         self.pdf_path = None
@@ -18,12 +19,17 @@ class PDFCropTool:
         self.crop_coords = None
         self.rect_start = None
         self.rect_id = None
+        # Nuove variabili per le opzioni
+        self.start_page = None
+        self.end_page = None
+
 
         self.root = tk.Tk()
         self.root.title("Crop My PDF")
 
         self.canvas = tk.Canvas(self.root, cursor="cross")
         self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.include_cover = tk.BooleanVar(value=True)
 
         self.menu = tk.Menu(self.root)
         self.root.config(menu=self.menu)
@@ -32,6 +38,12 @@ class PDFCropTool:
         file_menu.add_command(label="Open PDF", command=self.load_pdf)
         file_menu.add_command(label="Save cropped PDF", command=self.save_cropped_pdf)
         self.menu.add_cascade(label="File", menu=file_menu)
+
+        # Nuovo menu Opzioni
+        options_menu = tk.Menu(self.menu, tearoff=False)
+        options_menu.add_command(label="Set Start/End Page", command=self.set_page_range)
+        options_menu.add_checkbutton(label="Include Cover", variable=self.include_cover)
+        self.menu.add_cascade(label="Options", menu=options_menu)
 
         self.canvas.bind("<ButtonPress-1>", self.on_mouse_down)
         self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
@@ -50,9 +62,15 @@ class PDFCropTool:
         doc = fitz.open(filepath)
         pages_to_process = len(doc)
 
+        # Determina intervallo pagine
+        start = self.start_page if self.start_page is not None else 0
+        end = self.end_page if self.end_page is not None else pages_to_process - 1
+
+        page_indices = list(range(start, end + 1))
+
         min_width, min_height = float("inf"), float("inf")
 
-        for i in range(pages_to_process):
+        for i in page_indices:
             pix = doc[i].get_pixmap(dpi=DPI, alpha=False)
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
             self.images.append(img)
@@ -97,6 +115,26 @@ class PDFCropTool:
         self.crop_coords = (min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))
         print("Selected area (preview):", self.crop_coords)
 
+    def set_page_range(self):
+        # Finestra popup per impostare start_page ed end_page
+        popup = tk.Toplevel(self.root)
+        popup.title("Set Page Range")
+        tk.Label(popup, text="Start Page (1-based, blank=all)").pack()
+        start_entry = tk.Entry(popup)
+        start_entry.pack()
+        tk.Label(popup, text="End Page (1-based, blank=all)").pack()
+        end_entry = tk.Entry(popup)
+        end_entry.pack()
+
+        def set_values():
+            start = start_entry.get()
+            end = end_entry.get()
+            self.start_page = int(start) - 1 if start else None
+            self.end_page = int(end) - 1 if end else None
+            popup.destroy()
+
+        tk.Button(popup, text="OK", command=set_values).pack()
+
     def save_cropped_pdf(self):
         if not self.crop_coords or not self.pdf_path:
             messagebox.showerror("Error", "No area selected or PDF not loaded.")
@@ -118,8 +156,13 @@ class PDFCropTool:
 
         new_pdf = fitz.open()
         for page in doc:
-            if page.number == 0:
+            if page.number == 0 and self.include_cover.get(): # cover page
                 new_pdf.insert_pdf(doc, from_page=0, to_page=0)
+                continue
+
+            if self.start_page is not None and page.number < self.start_page:
+                continue
+            if self.end_page is not None and page.number > self.end_page:
                 continue
 
             pw, ph = page.rect.width, page.rect.height
@@ -133,3 +176,12 @@ class PDFCropTool:
         new_pdf.save(save_path)
         new_pdf.close()
         messagebox.showinfo("Success", f"PDF saved in:\n{save_path}")
+
+
+# run as script
+def main():
+    PDFCropTool()
+
+
+if __name__ == "__main__":
+    main()
